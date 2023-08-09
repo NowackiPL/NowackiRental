@@ -1,10 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+ <a href={% url 'create_car' %}>
+        <button type="button">Dodaj samochód</button>
+    </a>
+
+  <ul>
+    {% for car in object_list %}
+      <li>
+        <a href="{% url 'detail' car.id %}">{{ car.brand }} {{ car.model }} - {{ car.year }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

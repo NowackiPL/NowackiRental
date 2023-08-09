@@ -1,8 +1,7 @@
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 from django.db import models
-
-# Create your models here.
-
-from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
 from imagekit.models import ImageSpecField
@@ -25,14 +24,14 @@ class BaseModel(models.Model):
 
 class Car(BaseModel):
     type_engines = {
-        ('Petrol', 'Benzyna'),
+        ('Benzyna', 'Benzyna'),
         ('Diesel', 'Diesel'),
-        ('Hybrid', 'Hybryda'),
-        ('Electric', 'Elektryczny')
+        ('Hybryda', 'Hybryda'),
+        ('Elektryczny', 'Elektryczny')
     }
     type_transmission = {
-        ('Automatic', 'Automatyczna'),
-        ('Manual', 'Manualna')
+        ('Automatyczna', 'Automatyczna'),
+        ('Manuala', 'Manualna')
     }
     number_of_gears = {
         ('5', '5'),
@@ -41,9 +40,9 @@ class Car(BaseModel):
         ('8', '8')
     }
     type_drives = {
-        ('FWD', 'Przedni'),
-        ('RWD', 'Tylni'),
-        ('AWD', '4x4')
+        ('Przedni', 'Przedni'),
+        ('Tylni', 'Tylni'),
+        ('4x4', '4x4')
     }
     type_car = {
         ('Kombi', 'Kombi'),
@@ -61,14 +60,14 @@ class Car(BaseModel):
         format='JPEG',  # Format miniatury awatara
         options={'quality': 80}  # Jakość miniatury awatara
     )
-    brand = models.CharField(max_length=32, unique=True)
+    brand = models.CharField(max_length=32)
     model = models.CharField(max_length=32)
     cars_type = models.CharField(max_length=32, choices=type_car)
     engine = models.CharField(max_length=32, choices=type_engines)
     capacity = models.FloatField()
     year = models.CharField(max_length=8)
     number_of_seats = models.IntegerField()
-    Consumption = models.CharField(max_length=32)
+    consumption = models.CharField(max_length=32)
     power = models.CharField(max_length=16)
     car_mileage = models.CharField(max_length=16)
     transmission = models.CharField(max_length=32, choices=type_transmission)
@@ -110,6 +109,23 @@ class Rent(BaseModel):
     take_back = models.ForeignKey(CompanyBranches, related_name='rents_returned', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 
+    def clean(self):
+        if not self.is_car_available():
+            raise ValidationError(
+                _("This car is not available for the selected dates."),
+                params={'value': self},
+            )
+
+    def is_car_available(self):
+        conflicting_rents = Rent.objects.filter(
+            Q(car=self.car),
+            Q(start_date__range=(self.start_date, self.end_date)) |
+            Q(end_date__range=(self.start_date, self.end_date)) |
+            Q(start_date__lte=self.start_date, end_date__gte=self.end_date)
+        )
+
+        return not conflicting_rents.exists()
+
     def save(self, *args, **kwargs):
         # Obliczanie wartości pola 'period' na podstawie różnicy między 'start_date' a 'end_date'
         if self.start_date and self.end_date:
@@ -124,3 +140,5 @@ class Rent(BaseModel):
 
     def __str__(self):
         return f"Rent of {self.car} by {self.client}"
+
+

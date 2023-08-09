@@ -10,7 +10,7 @@ from .models import Car, Client, Rent, CompanyBranches
 class CarAdmin(ModelAdmin):
     ordering = ["id"]
     list_display = [
-        "id", 'avatar', "brand", "model", "cars_type", "engine", "capacity", "year", "number_of_seats", "Consumption",
+        "id", 'avatar', "brand", "model", "cars_type", "engine", "capacity", "year", "number_of_seats", "consumption",
         "power",
         "car_mileage", "transmission", 'no_gears', "drive", "price", "deposit"]
 
